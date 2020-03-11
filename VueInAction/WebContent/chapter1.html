@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>第一章 初识初识Vue.js</title>
+<script type="text/javascript" src="./js/vue.js"></script>
+</head>
+<body>
+  <div id="app">
+  	<button v-if="showBtn" v-on:click="handleClick">Click me</button>
+  	<ul>
+  		<li v-for="book in books">{{ book.name }}</li>
+  	</ul>
+  </div>
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        showBtn: true,
+        books: [
+        	{ name: '《Vue.js实战》' },
+        	{ name: '《JavaScript语言精粹》' },
+        	{ name: '《JavaScript高级程序设计》' }
+        ]
+      },
+      methods: {
+    	  handleClick: function() {
+    		  console.log('Clicked');
+    	  }
+      }
+    })
+  </script>
+</body>
+</html>

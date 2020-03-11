@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>第五章 内置指令</title>
+<style type="text/css">
+[v-cloak] {
+	dispaly:none
+}
+</style>
+<script type="text/javascript" src="./js/vue.js"></script>
+</head>
+<body>
+	<div id="app" v-cloak>
+		{{ message }}<br>
+		<span v-once>{{ message2 }}</span>
+		<!-- v-if才是真正的条件渲染,根据条件进行销毁和重建元素及绑定的事件或子组件 -->
+		<p v-if="status === 1">当status为1时显示该行</p>
+		<p v-else-if="status === 2">当status为2时显示该行</p>
+		<p v-else>否则显示该行</p>
+		<!-- 一次判断多个元素,使用<templat>元素,渲染结果不包含该元素 -->
+		<template v-if="status === 1">
+			<p>这是一段文本</p>
+			<p>这是一段文本</p>
+			<p>这是一段文本</p>
+		</template>
+		<!-- Vue在渲染元素时,出于效率考虑,会尽可能地复用已有的元素而非重新渲染 -->
+		<template v-if="type === 'name'">
+			<label>用户名：</label>
+			<input placeholder="输入用户名，切换后值仍存在，复用了input元素" size="45">
+		</template>
+		<template v-else>
+			<label>邮箱：</label>
+			<input placeholder="输入邮箱">
+		</template>
+		<button @click="handleToggleClick">切换输入类型</button><br>
+		<!-- 使用key属性不复用元素,取值必须唯一 -->
+		<template v-if="type === 'name'">
+			<label>用户名：</label>
+			<input placeholder="输入用户名，使用key属性不复用input元素" key="name-input" size="40">
+		</template>
+		<template v-else>
+			<label>邮箱：</label>
+			<input placeholder="输入邮箱" key="mail-input">
+		</template>
+		<button @click="handleToggleClick">切换输入类型</button>
+		<!-- v-show只是改变css属性切换,不能在template上使,适用于频繁切换条件 -->
+		<p v-show="status === 2">当status为2时显示该行</p>
+		<!-- v-for遍历数组,可以用of代替in,index为可选参数 -->
+		<ul>
+			<li v-for="(book, index) in books">{{ index }} - {{ book.name }}</li>
+			<!-- 使用template将多个元素渲染 -->
+			<template v-for="book in sortedBooks">
+				<li>书名：{{ book.name }}</li>
+				<li>作者：{{ book.author }}</li>
+			</template>
+			<!-- v-for也可以遍历对象属性,键名key和索引index为可选参数 -->
+			<li v-for="(value, key, index) in user">{{ index }} - {{ key }}: {{ value }}</li>
+		</ul>
+		<!-- v-for还可以迭代整数 -->
+		<span v-for="n in 10">{{ n }} </span><br>
+		<!-- Vue提供了一个特殊变量$event用于访问原生DOM事件 -->
+		<a href="http://www.apple.com" @click="handleClick('禁止打开', $event)">打开链接</a><br>
+		<!-- 阻止单击事件冒泡 -->
+		<a href="http://www.baidu.com" @click.stop="log('@click.stop触发的事件')">阻止单击事件冒泡</a><br>
+		<!-- 提交事件不再重载页面 -->
+		<form @submit.prevent="log('@submit.prevent触发的事件')" action="submmit.do"><button type="submit">提交事件不再重载页面</button></form><br>
+		<!-- 修饰符可以串联 -->
+		<a href="http://www.baidu.com" @click.stop.prevent="log('@click.stop.prevent触发的事件')">修饰符可以串联</a><br>
+		<!-- 只有修饰符 -->
+		<form @submit.prevent action="submmit.do"><button type="submit">只有修饰符</button></form><br>
+		<!-- 添加事件监听器时使用事件捕获模式 -->
+		<div @click.capture="log('@click.capture触发的事件')">添加事件监听器时使用事件捕获模式</div>
+		<!-- 只当事件在该元素本身（而不是子元素）触发时触发回调 -->
+		<div style="border: 1px solid #000;" @click.self="log('@click.self触发的事件')">只当事件在该元素本身（而不是子元素）触发时触发回调<div style="border: 1px solid #000;">这是子元素</div></div>
+		<!-- 只触发一次，组件同样适用 -->
+		<div @click.once="log('@click.once触发的事件')">只触发一次，组件同样适用</div>
+		<!-- 只有在keyCode是13时调用vm.submit() -->
+		<input @keyup.13="log('@keyup.13触发的事件')" value="keyup事件：回车键按下抬起(在元素内触发)" size="50"><br>
+		<input @keyup.f1="log('@keyup.f1触发的事件')" value="配置全局快捷键：F1(在元素内触发)" size="50"><br>
+		<!-- 除了keyCode,Vue还提供了快捷名称：.enter/.tab/.delete/.esc/.space/.up/.down/.left/.rigth -->
+		<!-- .ctrl/.alt/.shift/.meta（Mac下是Command键，Windows下是窗口键）这些修饰符也可以组合使用或和鼠标配合使用 -->
+		<!-- Shift + S -->
+		<input @keyup.shift.83="log('@keyup.shift.83触发的事件')" value="组合快捷键触发事件：Shift + S(在元素内触发)" size="50"><br>
+		<!-- Ctrl + Click -->
+		<div @click.ctrl="log('@click.ctrl触发的事件')">快捷键和鼠标组合事件：Ctrl + Click(在元素内触发)</div>
+	</div>
+
+	<script>
+	/* 也可以自己配置具体按键别名 */
+	Vue.config.keyCodes.f1=112;
+	
+	var app = new Vue({
+		el: '#app',
+		data: {
+			message: '当网速较慢,Vue.js还没有加载完,解决页面显示{{ message }}字样,即Vue实例结束编译时,从绑定的HTML元素上移除v-cloak',
+			message2: 'v-once定义它的元素或组件包括所有子节点只渲染一次,不再随数据变化重新渲染',
+			status: 1,
+			type: 'name',
+			books: [
+				{name: '《Vue.js实战》', author: '作者1真香==?'},
+				{name: '《JavaScript语言精粹》', author: '作者BBB'},
+				{name: '《JavaScript高级程序设计》', author: '作者444'}
+			],
+			user: {
+				name: 'Aresn',
+				gender: '男',
+				age: 26
+			}
+		},
+		computed: {
+			filterBooks: function() {
+				return this.books.filter(function(item) {
+					return item.name.match(/JavaScript/);
+				});
+			},
+			sortedBooks: function() {
+				return this.books.sort(function(a, b) {
+					return a.name.length < b.name.length;
+				});
+			}
+		},
+		methods: {
+			handleToggleClick: function() {
+				this.type = this.type === 'name' ? 'mail' : 'name';
+			},
+			handleClick: function(message, event) {
+				event.preventDefault();
+				window.alert(message);
+			},
+			log: function(msg) {
+				console.log(msg);
+			}
+		}
+	})
+	
+	app.message2='出问题了哈';
+	/* 1、使用push()、pop()、shift()、unshift()、splice()、sort()、reverse()数组变异方法,会触发试图更新 */
+	app.books.push({name: '《JavaScript揭秘》',author: '美国人吧？'});
+	/* 2、使用filter()、concat()、slice()数组非变异方法返回一个新数组,可以用新数组替换旧数组触发视图更新 */
+	app.books = app.books.filter(function(item) {
+		return item.name.match(/JavaScript/);
+	});
+	/* Vue在检测到数组变化时,并不是直接重新渲染整个列表,替换的数组中,含有相同元素的项不会被重新渲染,因此可以大胆地数组替换,不用担心性能问题 */
+	/* 3、老版本Vue.js通过索引直接设置项、修改数组长度,Vue是不能检测到的,也不会触发视图更新,新版本测试可以哦 */
+	app.books[2]={name: '《CSS开发指南2》', author: '外国1'};
+	app.books.length=1;
+	/* 设置项解决方法一 */
+	Vue.set(app.books, 1, {
+		name: '《CSS揭秘》',
+		author: '老外'
+	});
+	/* 设置项解决方法二 */
+	app.books.splice(1, 1, {
+		name: '《CSS揭秘2》',
+		author: '老外'
+	});
+	/* 修改数组长度解决方法 */
+	app.books.splice(1);
+  </script>
+</body>
+</html>

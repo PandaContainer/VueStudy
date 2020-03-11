@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>第四章 v-bind及class与style绑定</title>
+<script type="text/javascript" src="./js/vue.js"></script>
+</head>
+<body>
+	<!-- 绑定class的几种方式 -->
+	<div id="app">
+		<!-- 1.对象语法 -->
+		<div class="static" :class="{'active': isActive, 'error': isError}">查看class样式</div>
+		<div :class="classes">查看class样式</div>
+		<!-- 2.数组语法 -->
+		<div :class="[isActive ? activeCls : '', errorCls]">查看class样式</div>
+		<button :class="classes2">按钮</button>
+		<!-- 在组件上使用 -->
+		<!-- <my-component :class="'active': isActive"></my-component> -->
+		<!-- css属性使用驼峰命名或短横分隔命名,渲染的结果为短横分隔 -->
+		<div :style="{'color': color, 'fontSize': fontSize + 'px'}">文本</div>
+		<div :style="styles">文本</div>
+		<div :style="[styleA, styleB]">文本</div>
+	</div>
+
+	<script>
+	/** Vue.component('my-component', {
+		template: '<p class="article">一些文本</p>'
+	}); */
+	
+	var app = new Vue({
+		el: '#app',
+		data: {
+			isActive: true,
+			isError: false,
+			error: null,
+			activeCls: 'active',
+			errorCls: 'error',
+			size: 'large',
+			disabled: true,
+			color: 'red',
+			fontSize: 14,
+			styles: {
+				color: 'red',
+				fontSize: '14px'
+			},
+			styleA: {
+				color: 'red',
+				fontSize: '14px'
+			},
+			styleB: {
+				color: 'red',
+				fontSize: '14px'
+			}
+		},
+		computed: {
+			classes: function() {
+				return {
+					'active': this.isActive && !this.error,
+					'text-fail': this.error && this.error.type === 'fail'
+				}
+			},
+			classes2: function() {
+				return [
+					'btn',
+					{
+						['btn-' + this.size]: this.size !=='',
+						['btn-disabled']: this.disabled
+					}
+				];
+			}
+		}
+	});
+	app.isError = true;
+  </script>
+</body>
+</html>
