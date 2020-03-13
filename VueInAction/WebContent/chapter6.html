@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>第六章 表单与v-model</title>
+<script type="text/javascript" src="./js/vue.js"></script>
+</head>
+<body>
+	<div id="app">
+		<!-- v-model默认在input事件中同步输入框的数据 -->
+		<input type="text" v-model="message" placeholder="输入...">
+		<p>input数据绑定，输入的内容是：{{ message }}</p>
+		<!-- @input绑定方法，在中文输入法时是实时更新键盘输入,它的语法糖是v-model -->
+		<input type="text" @input="handleInput" placeholder="输入...">
+		<p>使用@input绑定方法，输入的内容是：{{ message2 }}</p>
+		<!-- .lazy修饰符会转变change事件中同步（失焦或回车时才更新） -->
+		<input type="text" v-model.lazy="message3">
+		<p>使用v-model.lazy修饰符数据绑定，输入内容是：{{ message3 }}</p>
+		<!-- .number修饰符将输入转变为Number类型，否则虽然你输入数字，但它的类型其实是String，比如在数字输入框时会比较有用 -->
+		<input type="number" v-model.number="message4">
+		<p>使用v-model.number修饰符数据绑定，输入内容是：{{ message4 }}，类型是：{{ typeof message4 }}</p>
+		<!-- .trim修饰符可以自动过滤输入的首尾空格 -->
+		<input type="text" v-model.trim="message5">
+		<p>使用v-model.trim修饰符数据绑定，输入内容是：{{ message5 }}</p>
+		<textarea v-model="text" placeholder="输入..."></textarea>
+		<p>textarea数据绑定，输入的内容是：</p>
+		<p style="white-space: pre;">{{ text }}</p>
+		<!-- 单选按钮在单独使用时,不需要v-model,直接使用v-bind绑定一个布尔类型的值,为真时选中,为否时不选 -->
+		<input type="radio" :checked="picked">
+		<label>单个单选按钮绑定checked属性，没什么用：{{ picked }}</label><button @click="resetRadioStatus()">清除选择</button><br>
+		<!-- 单个单选按钮绑定值 -->
+		<input type="radio" v-model="picked3" :value="value">
+		<label>单个单选按钮绑定value属性：picked3: {{ picked3 }}，value: {{ value }}</p>
+		<!-- 如果是组合使用来实现互斥选择的结果,就需要v-model配合value来使用 -->
+		<fieldset>
+			<legend>多个单选按钮</legend>
+			<input type="radio" v-model="picked2" value="html" id="html">
+			<label for="html">HTML</label>
+			<input type="radio" v-model="picked2" value="js" id="js">
+			<label for="js">JavaScript</label>
+			<input type="radio" v-model="picked2" value="css" id="css">
+			<label for="css">CSS</label>
+			<p>选择的项是：{{ picked2 }}</p>
+		</fieldset>
+		<!-- 复选框单独使用时,也是用v-model来绑定一个布尔值 -->
+		<input type="checkbox" v-model="checked" value="value值不起作用" id="checked">
+		<label for="checked">单个复选框绑定状态：{{ checked }}</label><br>
+		<input type="checkbox" v-model="toggle" :true-value="value1" :false-value="value2">
+		<label>单个复选框绑定值：toggle：{{ toggle }}，value1：{{ value1 }}，value2：{{ value2 }}</label>
+		<!-- 复选框组合使用时,多个勾选框绑定到同一个数组类型数据,勾选时,value值会自动push到数组中 -->
+		<fieldset>
+			<legend>多个复选框</legend>
+			<input type="checkbox" v-model="checked2" value="html" id="html2">
+			<label for="html2">HTML</label>
+			<input type="checkbox" v-model="checked2" value="js" id="js2">
+			<label for="js2">JavaScript</label>
+			<input type="checkbox" v-model="checked2" value="css" id="css2">
+			<label for="css2">CSS</label>
+			<p>选择的项是：{{ checked2 }}</p>
+		</fieldset>
+		<!-- 选择列表如果<option>有value属性,Vue会优先匹配value的值,否则直接匹配text -->
+		<select v-model="selected">
+			<option>html</option>
+			<option value="js">JavaScript</option>
+			<option>css</option>
+		</select>
+		<p>单选选择列表，选择的项是：{{ selected }}</p>
+		<select v-model="selected3">
+			<option :value="{number: 123}">绑定值为Object对象</option>
+		</select>
+		<p>单选选择列表绑定Object对象值，选择的项对象属性值是：{{ selected3.number }}</p>
+		<select v-model="selected2" multiple="multiple">
+			<option v-for="option in options" :value="option.value">{{ option.text }}</option>
+		</select>
+		<p>多选选择列表，选择的项是：{{ selected2 }}</p>
+	</div>
+	<script>
+	var app = new Vue({
+		el: '#app',
+		data: {
+			message: '',
+			text: '',
+			message2: '',
+			picked: 'checked',
+			picked2: 'js',
+			checked: true,
+			checked2: ['html', 'css'],
+			selected:'html',
+			selected2:['html', 'js'],
+			options: [
+				{
+					text: 'HTML',
+					value: 'html'
+				},{
+					text: 'JavaScript',
+					value: 'js'
+				},{
+					text: 'CSS',
+					value: 'css'
+				}
+			],
+			picked3: 123,
+			value: 123,
+			toggle: 'a',
+			value1: 'a',
+			value2: 'b',
+			selected3: '',
+			message3: '',
+			message4: 0,
+			message5: ''
+		},
+		methods: {
+			handleInput: function(e) {
+				this.message2 = e.target.value;
+			},
+			resetRadioStatus: function() {
+				this.picked = '';
+				this.picked3 = '';
+			}
+		}
+	})
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /**
- * 第五章 实战：开发购物车
+ * 第五章 实战：开发购物车，复选框采用基于v-model数据双向绑定实现
  */
 var ajaxRequestDataList = [{
     category: '电子产品',
@@ -25,13 +25,13 @@ var ajaxRequestDataList = [{
 }, {
     category: '生活用品',
     goods: [{
-            id: 1,
+            id: 4,
             name: '保温杯',
             price: 108,
             count: 1,
             selected: true
         }, {
-            id: 2,
+            id: 5,
             name: '牙刷',
             price: 10,
             count: 4
@@ -40,13 +40,13 @@ var ajaxRequestDataList = [{
 }, {
     category: '果蔬',
     goods: [{
-            id: 111101,
+            id: 6,
             name: '香蕉',
             price: 11.20,
             count: 1,
             selected: true
         }, {
-            id: 222331,
+            id: 7,
             name: '大白菜',
             price: 20.61,
             count: 1,
@@ -54,12 +54,15 @@ var ajaxRequestDataList = [{
         }
     ]
 }];
-// 如果请求数据没有selected字段,在创建Vue示例之前,为数据增加selected字段
+// 如果请求数据已被选中,在创建Vue示例之前,为复选框绑定数据赋值,并计算全局索引
 var index = 0;
+var selectedList = [];
 for(var i = 0; i < ajaxRequestDataList.length; i++) {
 	var goodsList = ajaxRequestDataList[i].goods;
 	for(var j = 0; j < goodsList.length; j++) {
-		goodsList[j].selected = goodsList[j].selected || false;
+		if(goodsList[j].selected) {
+			selectedList.push(goodsList[j].id);
+		}
 		index++;
 		goodsList[j].index = index;
 	}
@@ -70,7 +73,7 @@ var app = new Vue({
 	data: {
 		useGlobalIndex: true,	// 是否使用全局序号
 		list: ajaxRequestDataList,
-		selectedAll: false
+		selected: selectedList
 	},
 	computed: {
 		totalPrice: function() {
@@ -79,7 +82,7 @@ var app = new Vue({
 				var goodsList = this.list[i].goods;
 				for(var j = 0; j < goodsList.length; j++) {
 					var item = goodsList[j];
-					if(item.selected) {
+					if(this.selected.indexOf(item.id) > -1) {
 						total += item.price * item.count;
 					}
 				}
@@ -97,7 +100,12 @@ var app = new Vue({
 			this.list[i1].goods[i2].count++;
 		},
 		handleRemove: function(i1, i2) {
-			this.list[i1].goods.splice(i2, 1);
+			var delGoodsArray = this.list[i1].goods.splice(i2, 1);
+			// 同时删除被删除商品对应复选框的value值
+			var delIndex = this.selected.indexOf(delGoodsArray[0].id);
+			if(delIndex > -1) {
+				this.selected.splice(delIndex, 1);
+			}
 			// 判断商品列表为空,则删除类别信息
 			if(this.list[i1].goods.length == 0) {
 				this.list.splice(i1, 1);
@@ -110,29 +118,52 @@ var app = new Vue({
 			}
 		},
 		selectAll: function() {
-			this.selectedAll = !this.selectedAll;
-			for(var i = 0; i < this.list.length; i++) {
-				var goodsList = this.list[i].goods;
-				for(var j = 0; j < goodsList.length; j++) {
-					goodsList[j].selected = this.selectedAll;
+			// Vue在本次方法执行完,才会自动添加或删除选中复选框的value值到绑定数组中,所以只能先自己维护了
+			// 取消全选
+			if(this.selected.indexOf('all') > -1) {
+				this.selected = [];
+			} else {
+				// 全选
+				this.selected = ['all'];
+				for(var i = 0; i < this.list.length; i++) {
+					var goodsList = this.list[i].goods;
+					for(var j = 0; j < goodsList.length; j++) {
+						this.selected.push(goodsList[j].id);
+					}
 				}
 			}
 		},
 		select: function(i1, i2) {
-			this.list[i1].goods[i2].selected = !this.list[i1].goods[i2].selected;
+			// Vue在本次方法执行完,才会自动添加或删除选中复选框的value值到绑定数组中,所以只能先自己维护了
+			var selIndex = this.selected.indexOf(this.list[i1].goods[i2].id);
+			if(selIndex > -1) {
+				// 取消
+				this.selected.splice(selIndex, 1);
+			} else {
+				// 选中
+				this.selected.push(this.list[i1].goods[i2].id);
+			}
 			this.processSelectedAll();
 		},
 		processSelectedAll: function() {
 			for(var i = 0; i < this.list.length; i++) {
 				var goodsList = this.list[i].goods;
 				for(var j = 0; j < goodsList.length; j++) {
-					if(!goodsList[j].selected) {
-						this.selectedAll = false;
+					if(this.selected.indexOf(goodsList[j].id) === -1) {
+						// 删除all选项
+						var index = this.selected.indexOf("all");
+						if(index > -1) {
+							this.selected.splice(index, 1);
+						}
 						return;
 					}
 				}
 			}
-			this.selectedAll = true;
+			// 如果all选项没有选中
+			if(this.selected.indexOf("all") === -1) {
+				// 从头部添加all选项
+				this.selected.unshift('all');
+			}
 		},
 		calculateRowId: function() {
 			var index = 0;
