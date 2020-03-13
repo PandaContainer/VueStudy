@@ -11,13 +11,13 @@
 		<template v-if="list.length">
 			<table>
 				<thead>
-					<tr><th><a @click.stop.prevent="selectAll()"><input type="checkbox" :checked="selectedAll ? 'checked' : ''">全选</a></th><th>序号</th><th>商品名称</th><th>商品单价</th><th>购买数量</th><th>操作</th></tr>
+					<tr><th><a @click.stop.prevent="selectAll()"><input type="checkbox" v-model="selected" value="all">全选</a></th><th>序号</th><th>商品名称</th><th>商品单价</th><th>购买数量</th><th>操作</th></tr>
 				</thead>
 				<tbody>
 					<template v-for="(item1, i1) of list">
 						<tr><td colspan="6">{{ item1.category }}</td></tr>
 						<tr v-for="(item2, i2) in item1.goods">
-							<td><input type="checkbox" @click="select(i1,i2)" :checked="item2.selected ? 'checked' : ''"></td>
+							<td><input type="checkbox" @click="select(i1,i2)" v-model="selected" :value="item2.id"></td>
 							<td>{{ useGlobalIndex ? item2.index : i2 + 1 }}</td>
 							<td>{{ item2.name }}</td>
 							<td>{{ item2.price }}</td>
