@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>第六章 组件详解</title>
+<style type="text/css">
+.xuxian { width:700px; height:auto; border-bottom:1px dashed }
+</style>
+<script type="text/javascript" src="./js/vue.js"></script>
+</head>
+<body>
+	<div id="app">
+		<!-- props传递数据、events触发事件和slot内容分发构成了Vue组件的3个API来源，再复杂组件也是由这3部分构成 -->
+		<my-component></my-component>
+		<my-component2></my-component2>
+		<table border="1">
+			<thead><tr><th>在表格等限制元素中通过is属性使用组件<th><th>标题</th></tr></thead>
+			<!-- Vue组件模板在某些情况下受HTML限制，比如<table>内只允许是<tr>、<td>、<th>等表格元素，
+				所以在<table>内直接使用组件是无效的，这种情况可以使用is属性来挂载组件，
+				<tbody>在渲染时会被替换为组件的内容，常见的限制元素还有<ul>、<ol>、<select>，如果使用的
+				是字符串模板，是不受限制的
+			 -->
+			<tbody is="my-component"></tbody>
+		</table>
+		<my-component3></my-component3>
+		<my-component3></my-component3>
+		<my-component3></my-component3>
+		<!-- HTML特性不区分大小写，当使用DOM模板时，驼峰命名的props需要转为短横分隔命名，如果使用字符串模板，可以忽略该限制 -->
+		<my-component4 message="111" warning-text="，当使用DOM模板时，驼峰命名的props需要转为短横分隔命名"></my-component4>
+		<!-- 子组件接收参数props采用字符串数组接收数据 -->
+		父组件：<input type="text" v-model="parentMessage">
+		<my-component4 :message="parentMessage"></my-component4>
+		<!-- 如果直接传递数字、布尔值、数组、对象，而不使用v-bind，传递的仅仅是字符串 -->
+		<my-component5 message="[1,2,3]"></my-component5>
+		<my-component5 :message="[1,2,3]"></my-component5>
+		<!-- Vue2.x通过props传递数据是单向的了，也就是父组件数据变化时会传递给子组件，但是反过来不行 -->
+		<my-component6 :init-count="initCount" :width="800"></my-component6>
+		<!-- 子组件接收参数props采用对象进行数据校验 -->
+		<my-component7 :prop-a="1" prop-b="abc" :prop-d="100" :prop-e="[1,2,3]" prop-f="99"></my-component7>
+		<!-- 当子组件需要向父组件传递数据时，就要用到自定义事件，子组件用$emit()来触发事件，父组件用$on()来监听子组件事件，
+			父组件也可以直接在子组件自定义标签上使用v-on来监听子组件触发的自定义事件，父组件也可以使用.native修饰符监听子组件根元素的原生DOM事件 -->
+		<p>父组件使用自定义事件监听器接收到子组件数据，总数：{{ total }} </p>
+		<my-component8 @increase="handleGetTotal" @reduce="handleGetTotal" @click.native="handleClick"></my-component8>
+		<p>父组件使用v-model(@input语法糖)接收到子组件数据，总数：{{ total2 }} </p>
+		<my-component9 v-model="total2"></my-component9>
+		<p>父组件使用@input事件监听器接收到子组件数据，总数：{{ total3 }} </p>
+		<my-component9 @input="handleGetTotal2"></my-component9>
+		<p>父组件使用v-model、子组件使用props接收一个value参数、触发input事件，实现双向数据绑定，总数：{{ total4 }} </p>
+		<my-component10 v-model="total4"></my-component10>
+		父组件：<button @click="handleReduce">-1</button>
+		<p>父组件使用中央数据总线bus接收到子组件消息(适用于父子、兄弟、跨级任何组件间通信)：{{ message }} </p>
+		<my-component11></my-component11>
+		<!-- 子组件中使用this.$parent可以直接访问父实例或组件，父组件也可以通过this.$children访问它所有的子组件，
+			而且可以递归向上向下无限访问，直到根实例或最内层组件，实际业务中应避免依赖甚至修改父组件数据，最好通过props和$emit通信 -->
+		<p>子组件使用父链(this.$parent)直接修改父组件数据，实际业务中应尽量避免使用：{{ message2 }}</p>
+		<my-component12></my-component12>
+		<!-- 当子组件较多时，通过this.$children遍历出需要的组件比较困难，Vue提供了子组件索引方法，
+			用特殊属性ref为子组件指定一个索引名称，this.$refs在组件渲染完成才填充，作为直接访问子组件应急方案，应当避免在模板或计算属性中使用$refs -->
+		<p>父组件：<button @click="handleRef">通过ref获取子组件实例</button>通过子组件索引(this.$refs.索引名称)获取子组件数据，应当避免在模板或计算属性中使用：{{ message3 }}</p>
+		<my-component13 ref="comA"></my-component13>
+		<p ref="p">普通标签：Vue会自动判断this.$refs.索引名是普通标签还是组件：点击上面按钮，在控制台查看</p>
+		<!-- 使用slot(插槽)对组件分发内容，在子组件使用<slot>元素为这个子组件开启一个slot，在父组件模板里，
+			插入在子组件标签内的所有内容将替代子组件的<slot>标签及它的内容，slot分发的内容作用域是在父组件上的。
+			slot可以匿名单个使用，也可指定name属性具名使用，二者可以共存，如果没有指定匿名slot，
+			父组件多余的内容片段都将被抛弃，子组件通过this.$slots.slotName可以访问具名slot -->
+		<my-component14>
+			<h2 slot="header">标题：使用slot（插槽）分发内容</h2>
+			<p>正文内容</p>
+			<p>更多正文内容</p>
+			<div slot="footer">底部信息</div>
+		</my-component14>
+		<!-- 作用域插槽是一种特殊的slot，使用一个可以复用的模板替换已渲染的元素，Vue2.5以后使用slot-scope替代已废弃scope，
+			props是一个临时变量，就像v-for="item in items"里的item一样，可以通过props临时变量访问来自子组件插槽的数据msg -->
+		<my-component15>
+			<template slot-scope="props">
+				<p>作用域插槽：父组件通过slot-scope属性访问子组件的数据：msg={{ props.msg }}</p>
+			</template>
+		</my-component15>
+		<!-- 作用域插槽更具代表性的用例是列表组件，允许组件自定义应该如何渲染列表每一项，
+			既可以复用子组件slot，又可以使slot内容不一致 -->
+		<p>作用域插槽更具代表性的用例是列表组件：</p>
+		<my-list :books="books">
+			<!-- 作用域插槽也可以是具名的slot -->
+			<template slot="book" slot-scope="props">
+				<li>{{ props.bookName }}</li>
+			</template>
+		</my-list>
+		<div class="xuxian"><i>以下是组件的高级用法</i></div>
+		<!-- 递归组件：组件在它的模板内调用递归的调用自己，只要给组件设置name的选项就可以了，
+			必须给定一个条件限制递归数量，否则会抛出错误：too much recursion -->
+		<p>递归组件：可以用来开发一些具有未知层级关系的独立组件，比如级联选择器和树形控件等</p>
+		<my-component16 :count="1"></my-component16>
+		<!-- 内联模板：在使用组件时，给组件标签使用inline-template特性，组件就会把它的内容当做模板，
+			而不是当做内容分发，让模板更灵活，变量作用域只在子组件中，建议不要轻易使用内联模板 -->
+		<my-component17 inline-template>
+			<div>
+				<h2>内联模板：在父组件中定义子组件的模板</h2>
+				<!-- <p>新版本Vue.js内联模板只能使用子组件作用域的数据：{{ message }}</p> -->
+				<p>{{ msg }}</p>
+			</div>
+		</my-component17>
+		<!-- Vue提供了一个特殊元素<component>用来动态的挂载不同组件，使用is属性来选择要挂载的组件 -->
+		<p>动态组件：</p>
+		<componet :is="currentView"></componet>
+		<button @click="handleChangeView('A')">切换到A组件</button>
+		<button @click="handleChangeView('B')">切换到B组件</button>
+		<button @click="handleChangeView('C')">切换到C组件</button>
+		<!-- 异步组件：一开始把所有组件都加载是没有必要的一笔开销，Vue运行将组件定义为一个工厂函数，动态地解析组件，
+			Vue只在组件需要渲染的时触发工厂函数，并且把结果缓存起来，用于后面再次渲染 -->
+		<p>异步组件：</p>
+		<my-component18></my-component18>
+		<!-- $nextTick：Vue观察到数据变化时不是直接更新DOM，而是开启一个异步更新队列，缓冲同一事件循环中发生的
+			所有数据改变，在缓冲时去除重复数据，然后在下一个事件循环tick中，Vue会刷新队列并执行实际（已去重的）工作，
+			所以如果用一个for循环动态改变数据100次，其实它只会应用最后一次改变，以减少开销 -->
+		<p>$nextTick()方法：在下一次事件循环tick中执行DOM操作</p>
+		<div id="div" v-if="showDiv">这是一段文本</div>
+		<button @click="getText">通过$nextTick获取未创建的div元素内容</button>
+		<!-- x-template：Vue提供了一种定义模板方式，在<script>标签里使用text/x-template类型，并指定一个id，将这个id赋给template -->
+		<p>x-template脚本：可以在x-template脚本中定义组件模板</p>
+		<my-component19></my-component19>
+		<script type="text/x-template" id="my-component19">
+			<div>这是在x-template脚本中定义的组件内容</div>
+		</script>
+		<!-- 手动挂载实例：Vue.extend是基础Vue构造器，创建一个“子类”，参数是一个包含组件选项的对象；
+		如果Vue实例在实例化时没有收到el选项，它就处于“未挂载”状态，可以使用$mount()手动挂载一个未挂载的实例，
+		方法返回实例本身，可以链式调用其它方法。是一种比较极端的高级用法，业务中几乎用不到，开发复杂独立组件可能会用 -->
+		<p>手动挂载的实例：使用Vue.extend({选项})创建Vue子类，$mount('#id')挂载一个“未挂载”（没有配置el选项）的实例</p>
+		<div id="mount-div"></div>
+	</div>
+	
+	<script>
+	/* 全局组件，必须在创建实例之前注册，组件名称推荐使用小写加减号分隔的形式命名 */
+	Vue.component('my-component', {
+		/* template的DOM结构必须被一个元素包含，不带<div></div>是无法渲染的 */
+		template: '<div>{{ message }}</div>',
+		/* 组件中也可以像Vue实例那样使用其它选项，比如data、computed、methods等，但是data必须是函数，然后return出去 */
+		data: function() {
+			return {
+				message: '这里是全局组件的内容'
+			}
+		}
+	});
+	
+	var data = {
+			counter: 0
+	}
+	Vue.component('my-component3', {
+		template: '<button @click="counter++">{{ counter }}</button>',
+		data: function() {
+			/* return data; */
+			return {
+				counter: 0
+			}
+		}
+	});
+	
+	/* 使用props声明需要从父级接收的数据，pros的值有两种，一种是字符串数组，一种是对象 */
+	Vue.component('my-component4', {
+		props: ['message', 'warningText'],
+		template: '<div>子组件props采用字符串数组，接收到父组件参数：{{ message }} {{ warningText}}</div>'
+	});
+	
+	Vue.component('my-component5', {
+		props: ['message'],
+		template: '<div>如果父组件直接传递数字、布尔值、数组、对象，而不使用v-bind，传递的仅仅是字符串：message={{ message }}，类型为{{ typeof message }}</div>'
+	});
+	/* 两种需要改变props情况：一种是子组件将父组件传递的参数保存为自己初始值，另一种是prop作为需要被转变的原始值传入，使用计算属性 */
+	Vue.component('my-component6', {
+		props: ['initCount', 'width'],
+		template: '<div :style="style">子组件修改父组件参数：(1)将参数保存为自己初始值，\
+					修改自己的变量：count={{ count }}，(2)使用计算属性：width={{ style.width }}</div>',
+		data: function() {
+			return {
+				count: this.initCount
+			}
+		},
+		computed: {
+			style: function() {
+				return {
+					width: this.width + 'px'
+				}
+			}
+		}
+	});
+	
+	/* 当prop需要验证时，就需要对象写法，验证的type类型可以是：String、Number、Boolean、Object、Array、Function，
+		也可以是自定义构造器，使用instanceof检测，如果校验失败，控制台打印错误信息 */
+	Vue.component('my-component7', {
+		props: {
+			// 必须是数字类型
+			propA: Number,
+			// 必须是字符串或数字类型
+			propB: [String, Number],
+			// 布尔值，如果没有定义，默认值就是true
+			propC: {
+				type: Boolean,
+				default: true
+			},
+			// 数字，而且是必传
+			propD: {
+				type: Number,
+				required: true
+			},
+			// 如果是数组或对象，默认值必须是一个函数来返回
+			propE: {
+				type: Array,
+				default: function() {
+					return [];
+				}
+			},
+			// 自定义一个验证函数
+			propF: {
+				validator: function(value) {
+					return value > 10;
+				}
+				
+			}
+		},
+		template: '<div>子组件props采用对象进行数据校验，接收到父组件参数：propA={{ propA }}, propB={{ propB }}, propC={{ propC }}, propD={{ propD }}, propE={{ propE }}, propF={{ propF }}</div>'
+	});
+	
+	Vue.component('my-component8', {
+		template: '\
+			<div>子组件：\
+				<button @click="handleIncrease">+1</button>\
+				<button @click="handleReduce">-1</button>\
+			</div>',
+		data: function() {
+			return {
+				counter: 0
+			}
+		},
+		methods: {
+			handleIncrease: function() {
+				this.counter++;
+				this.$emit('increase', this.counter);
+			},
+			handleReduce: function() {
+				this.counter--;
+				this.$emit('reduce', this.counter);
+			}
+		}
+	});
+	
+	Vue.component('my-component9', {
+		template: '<div>子组件：<button @click="handleClick">+1</button></div>',
+		data: function() {
+			return {
+				counter: 0
+			}
+		},
+		methods: {
+			handleClick: function() {
+				this.counter++;
+				this.$emit('input', this.counter);
+			}
+		}
+	});
+	
+	Vue.component('my-component10', {
+		/* 在组件标签上使用v-model指令，会默认传递名称为value的参数 */
+		props: ['value'],
+		template: '<div>子组件：<input :value="value" @input="updateValue"></div>',
+		methods: {
+			updateValue: function(event) {
+				this.$emit('input', event.target.value);
+			}
+		}
+	});
+	
+	// 中央事件总线，还可以用来保存一些公共数据
+	var bus = new Vue();
+	Vue.component('my-component11', {
+		template: '<div>子组件：<button @click="handleEvent">传递事件</button></div>',
+		methods: {
+			handleEvent: function() {
+				bus.$emit('on-message', '来自组件my-component11的内容');
+			}
+		}
+	});
+	
+	Vue.component('my-component12', {
+		template: '<div>子组件：<button @click="handleEvent">通过父链直接修改数据</button></div>',
+		methods: {
+			handleEvent: function() {
+				// 访问到父链后，可以做任何操作，比如直接修改数据
+				this.$parent.message2 = '来自组件my-component12的内容';
+			}
+		}
+	});
+	
+	Vue.component('my-component13', {
+		template: '<div>子组件：message={{ message }}</div>',
+		data: function() {
+			return {
+				message: '子组件内容'
+			}
+		}
+	});
+	
+	Vue.component('my-component14', {
+		template: '<div class="container">\
+					   <div class="header"><slot name="header"></slot></div>\
+					   <div class="main"><slot>\
+						    <p>如果父组件没有插入内容，我将作为默认出现</p>\
+					   </slot></div>\
+					   <div class="footer"><slot name="footer"></slot></div>\
+					</div>',
+		mounted: function() {
+			/* 子组件通过$slots可以访问具名slot，this.$slots.default包含了所有没被包含在具名slot中的节点 */
+			var header = this.$slots.header;
+			var main = this.$slots.default;
+			var footer = this.$slots.footer;
+			console.log(header);
+			console.log(header[0].elm.outerHTML);
+		}
+	});
+	
+	Vue.component('my-component15', {
+		template: '<div class="container">\
+					   <slot msg="来自子组件的内容"></slot>\
+					</div>'
+	});
+	
+	/* 子组件my-list接收来自父组件props数组books，并将它在name为book的slot上使用v-for指令循环，同时暴露一个变量bookName */
+	Vue.component('my-list', {
+		props: {
+			books: {
+				type: Array,
+				default: function() {
+					return [];
+				}
+			}
+		},
+		template: '<ul>\
+					   <slot name="book" v-for="book in books" :book-name="book.name"></slot>\
+					   <!-- 这里也可以写默认slot内容 -->\
+					</ul>'
+	});
+	
+	Vue.component('my-component16', {
+		name: 'my-component16',
+		props: {
+			count: {
+				type: Number,
+				default: 1
+			}
+		},
+		template: '<div class="child">递归组件：count={{ count }}\
+					   <my-component16 :count="count + 1" v-if="count < 3"></my-component16>\
+					</div>'
+	});
+	
+	Vue.component('my-component17', {
+		data: function() {
+			return {
+				msg: '最新版本的Vue.js，内联模板只能使用子组件声明的数据'
+			}
+		}
+	});
+	
+	/* 异步组件：工厂函数接收一个resolve回调，在收到服务器下载的组件定义时调用（如Ajax请求），也可以调用reject(reason)指示加载失败 */
+	Vue.component('my-component18', function(resolve, reject) {
+		window.setTimeout(function() {
+			resolve({
+				template: '<div>我是异步渲染的组件</div>'
+			});
+			/* reject("加载异步组件失败！"); */
+		}, 2000);
+	});
+	
+	Vue.component('my-component19', {
+		template: '#my-component19'
+	});
+			
+			
+	var Child = {
+			template: '<div>这里是局部组件的内容</div>'
+	}
+	
+	var HOME = {
+			template: '<p>Welcome home!</p>'
+	}
+	
+	var app = new Vue({
+		el: '#app',
+		/* 组件也可以使用components选项来注册局部组件，只在该实例作用域下有效，组件中也可以使用components选项来注册组件，使组件可以嵌套 */
+		components: {
+			'my-component2': Child,
+			comA: {
+				template: '<div>组件A</div>'
+			},
+			comB: {
+				template: '<div>组件B</div>'
+			},
+			comC: {
+				template: '<div>组件C</div>'
+			}
+		},
+		data: {
+			parentMessage: '1',
+			initCount: 1,
+			total: 0,
+			total2: 0,
+			total3: 0,
+			total4: 0,
+			message: '',
+			message2: '',
+			message3: '',
+			books: [
+				{name: '《Vue.js实战》'},
+				{name: '《JavaScript语言精粹》'},
+				{name: '《JavaScript高级程序设计》'}
+			],
+			/* 动态组件is属性可以直接绑定在组件对象 */
+			currentView: HOME,
+			showDiv: false
+		},
+		methods: {
+			handleGetTotal: function(total) {
+				this.total = total;
+			},
+			handleClick: function() {
+				console.log("父组件使用.native修饰符监听到了子组件根元素的原生DOM事件：click");
+			},
+			handleGetTotal2: function(total) {
+				this.total3 = total;
+			},
+			handleReduce() {
+				this.total4--;
+			},
+			handleRef() {
+				this.message3 = this.$refs.comA.message;
+				
+				console.log("this.$refs.comA获取到的组件(_isVue:true)：");
+				console.log(this.$refs.comA);
+				console.log("this.$refs.p获取到的普通标签：");
+				console.log(this.$refs.p);
+			},
+			handleChangeView: function(component) {
+				this.currentView = 'com' + component;
+			},
+			getText: function() {
+				this.showDiv = true;
+				/* div元素会在下一个事件循环tick中创建，因此对div操作必须放在下一个tick中 */
+				this.$nextTick(function() {
+					var text = document.getElementById("div").innerHTML;
+					alert(text);
+				});
+			}
+		},
+		mounted: function() {
+			var _this = this;
+			// 在实例初始化时，监听来自bus实例的事件
+			bus.$on("on-message", function(msg) {
+				_this.message = msg;
+			});
+		}
+	});
+	
+	var MyComponent = Vue.extend({
+		template: '<div>这是一个手动挂载的实例：{{ msg }}</div>',
+		data: function() {
+			return {
+				msg: '业务中几乎用不到，只做了解就好'
+			}
+		}
+	});
+	
+	new MyComponent().$mount('#mount-div');
+	
+	// 另外两种写法：1.创建实例时配置el选项
+	/* new MyComponent({
+		el: '#mount-div'
+	}); */
+	// 2.在文档之外渲染并且随后挂载，即不配置el选项直接挂载，随后使用组件模板内容
+	/* var component = new MyComponent().$mount();
+	document.getElementById("mount-div").appendChild(component.$el); */
+  </script>
+</body>
+</html>
