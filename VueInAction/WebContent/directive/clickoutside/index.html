@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>可从外部关闭的下拉菜单的指令</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="../../js/vue.js"></script>
+<script type="text/javascript" src="clickoutside.js"></script>
+</head>
+<body>
+	<div id="app" v-cloak>
+		<div class="main" v-clickoutside.esc="handleClose">
+			<button @click="show = !show">点击显示下拉菜单</button>
+			<div class="dropdown" v-show="show">
+				<p>下拉菜单的内容，点击外面区域可以关闭，为指令添加.esc修饰符，可使用esc快捷键关闭菜单</p>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript" src="index.js"></script>
+</body>
+</html>
