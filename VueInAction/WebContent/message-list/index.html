@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>留言列表应用</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="../js/vue.min.js"></script>
+<script type="text/javascript" src="input.js"></script>
+<script type="text/javascript" src="list.js"></script>
+</head>
+<body>
+<div id="app" v-cloak style="width: 500px;margin: 0 auto;">
+	<div class="title"><h2>留言板</h2></div>
+	<div class="message">
+		<v-input v-model="username"></v-input>
+		<v-textarea v-model="message" ref="message"></v-textarea>
+		<button @click="handleSend">发布</button>
+	</div>
+	<list :list="list" @reply="handleReply" @delete="handleDelete"></list>
+</div>
+<script type="text/javascript" src="index.js"></script>
+</body>
+</html>
