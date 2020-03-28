@@ -99,7 +99,7 @@
 				<p>{{ msg }}</p>
 			</div>
 		</my-component17>
-		<!-- Vue提供了一个特殊元素<component>用来动态的挂载不同组件，使用is属性来选择要挂载的组件 -->
+		<!-- Vue提供了一个特殊元素<component>用来动态的挂载不同组件，使用is属性来选择要挂载的组件，可以直接绑定组件对象 -->
 		<p>动态组件：</p>
 		<componet :is="currentView"></componet>
 		<button @click="handleChangeView('A')">切换到A组件</button>

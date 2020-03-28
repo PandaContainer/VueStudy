@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>可排序的表格组件</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="../../js/vue.min.js"></script>
+<script type="text/javascript" src="table.js"></script>
+</head>
+<body>
+<div id="app" v-cloak>
+	<sortable-table :data="data" :columns="columns"></sortable-table>
+	<button @click="handleAddData">添加数据</button>
+</div>
+<script type="text/javascript" src="index.js"></script>
+</body>
+</html>

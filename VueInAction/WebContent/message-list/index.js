@@ -1,0 +1,37 @@
+/**
+ * 留言列表js
+ */
+var app = new Vue({
+	el: '#app',
+	data: {
+		username: '',
+		message: '',
+		list: []
+	},
+	methods: {
+		handleSend: function() {
+			if(this.username === '') {
+				window.alert('请输入昵称');
+				return;
+			}
+			if(this.message === '') {
+				window.alert('请输入留言内容');
+				return;
+			}
+			this.list.push({
+				name: this.username,
+				message: this.message
+			});
+			this.message = '';
+		},
+		handleReply: function(index) {
+			var name = this.list[index].name;
+			this.message = '回复@' + name + '：';
+			// 通过$refs调用子组件方法
+			this.$refs.message.focus();
+		},
+		handleDelete: function(index) {
+			this.list.splice(index, 1);
+		}
+	}
+});

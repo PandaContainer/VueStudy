@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>第九章 Render函数</title>
+<script type="text/javascript" src="./js/vue.js"></script>
+</head>
+<body>
+	<!-- React和Vue2都使用了Virtual DOM技术，Virtual DOM并不是真正意义上的DOM，而是一个轻量级的JavaScript对象，
+	在状态发生变化时，Virtual DOM会进行diff运算，来更新只需被替换的DOM，而不是全部重绘。
+		与DOM操作相比，Virtual DOM是基于JavaScript计算的，所以开销会小很多。在Vue.js 2中，Virtual DOM就是通过一种VNode类
+	表达的，每个DOM元素或组件都对应一个VNode对象，可以通过Render函数生成VNode中的template内容。
+		在多数场景中，使用template就足够了，因为在业务中，生成效率是第一位，所以绝大多数业务代码都应当用template来完成，你
+	不用在意性能问题，如果使用了webpack做编译，template都会被预编译为render函数。但在一些特定的场景下，使用Virtual DOM会更简单。 -->
+	
+	<!-- createElement构成了Vue Virtual DOM的模板，它有3个参数：
+	 createElement(
+	 	// {String | Object | Function}
+	 	// 一个HTML标签、组件选项或一个函数，必选
+	 	// createElement方法必须Return上述其中一个
+	 	'div',
+	 	// {Object}
+	 	// 一个对应属性的数据对象，可选
+	 	// 您可以在template中使用
+	 	{
+	 		// 数据对象，在template中使用，可选，后面有详细介绍
+	 	},
+	 	// (String | Array)
+	 	// 子节点(VNodes)，用法一致，可选
+	 	[
+	 		createElement('h1', 'hello world'),
+	 		createElement(MyComponent, {
+	 			props: {
+	 				someProp: 'foo'
+	 			}
+	 		}),
+	 		'bar'
+	 	]
+	 )
+	 对于第二个参数"数据对象"，具体的选项如下：
+	 {
+	 	// 和v-bind:class一样的API
+	 	'class': {
+	 		foo: true,
+	 		bar: true
+	 	},
+	 	// 和v-bind:style一样的API
+	 	style: {
+	 		color: 'red',
+	 		fontSize: '14px'
+	 	},
+	 	// 正常的HTML特性
+	 	attrs: {
+	 		id: 'foo'
+	 	},
+	 	// 组件props
+	 	props: {
+	 		myProp: 'bar'
+	 	},
+	 	// DOM属性
+	 	domProps: {
+	 		innerHTML: 'baz'
+	 	},
+	 	// 自定义事件监听器“on”，不支持如v-on:keyup.enter的修饰器，需要手动匹配keyCode
+	 	on: {
+	 		click: this.clickHandler
+	 	},
+	 	// 仅对于组件，用于监听原生事件，而不是组件使用vm.$emit触发的自定义事件
+	 	nativeOn: {
+	 		click: this.nativeClickHandler
+	 	},
+	 	// 自定义指令
+	 	directives: [
+	 		{
+	 			name: 'my-custom-directive',
+	 			value: '2',
+	 			expression: '1 + 1',
+	 			arg: 'foo',
+	 			modifiers: {
+	 				bar: true
+	 			}
+	 		}
+	 	],
+	 	// 作用域slot，{ name: props => VNode|Array<VNode> }
+	 	scopedSlots: {
+	 		default: props => h('span', props.text)
+	 	},
+	 	// 如果子组件有定义slot的名称
+	 	slot: 'name-of-slot',
+	 	// 其它特殊顶层属性
+	 	key: 'myKey',
+	 	ref: 'myRef'
+	 }
+	 -->
+<div id="app">
+	使用Render函数创建的锚点组件：<anchor :level="2" title="特性">特性</anchor>
+	<!-- 就ele组件来说，使用template比Render写法要可读而且简单，所以要在合适场所使用Render函数，否则只会增加负担 -->
+	使用Render函数数据对象绑定属性和事件组件：<ele></ele>
+	<!-- 约束：所有组件树中，如果VNode是组件或含有组件的slot，那么VNode必须唯一，对于重复渲染多个组件（或元素），
+		必须通过工厂函数深度克隆多份VNode才能重复使用，深度克隆slot的做法有点偏黑科技，一般业务中一般不会遇到这样需求，
+		主要还是运用中独立组件中 -->
+	重复渲染组件约束：<ele2></ele2>
+	组件克隆slot节点复用：
+	<ele3>
+		<div>
+			<Child></Child>
+		</div>
+	</ele3>
+	使用JavaScript代替模板功能：<ele4 :show="show"></ele4>
+	<button @click="show = !show">切换 show</button>
+	<ele5 :list="list"></ele5>
+	<button @click="handleClick">显示列表</button><br>
+	实现v-model双向绑定：<ele6></ele6>
+	<!-- 对于事件修饰符和按键修饰符，基本也需要自己实现：
+		.stop => event.stopPropagation()
+		.prevent => event.preventDefault()
+		.self => if(event.target !== event.currentTarget) return
+		.enter、 .13 => if(event.keyCode !== 13) return 替换13位需要的keyCode
+		.ctrl、.alt、.shift、.meta => if(!event.ctrlKey) return 根据需要替换CtrlKey为altKey、shiftKey或metaKey
+		对于事件修饰符.capture和.once，Vue提供了特殊的前缀，可以直接写在on的配置里：
+		.capture => !
+		.once => ~
+		.capture.once => .once.capture ~!
+		写法如下：
+		on {
+			'!click': this.doThisInCapturingMode,
+			'~keyup': this.doThisOnce,
+			'~!mouseover': this.doThisOnceInCapturingMode
+		}
+	 -->
+	 模拟聊天发送内容：<ele7></ele7><br>
+	 使用this.$slots访问slot：<ele8></ele8>
+	 <ele8>
+	 	<p>使用slot显示的内容</p>
+	 </ele8>
+	 <!-- 函数化组件：Vue.js提供了一个functional布尔值选项，设置为true可以使组件无状态和无实例，也就是没有data和this上下文。
+	 	这样用render函数返回虚拟节点可以更容易渲染，因为函数化组件只是一个函数，渲染开销要小很多。使用函数化组件时，Render函数
+	 	提供了第二个参数context来提供临时上下文，组件需要的data、props、slots、children、parent都是通过这个上下文来传递的。
+	 	函数化组件适用于以下两个场景：程序化的在多个组件中选择一个，在将children,props,data传递给子组件之前操作他们 -->
+	 函数化组件（functional选项设置为true）：
+	 <smart-item :data="data"></smart-item>
+	 <button @click="change('img')">切换为图片组件</button>
+	 <button @click="change('video')">切换为视频组件</button>
+	 <button @click="change('text')">切换为文本组件</button>
+</div>
+
+<script>
+	Vue.component("anchor", {
+		props: {
+			level: {
+				type: Number,
+				required: true
+			},
+			title: {
+				type: String,
+				default: ''
+			}
+		},
+		render: function(createElement) {
+			return createElement(
+					'h' + this.level,
+					[
+						createElement(
+							'a',
+							{
+								domProps: {
+									href: '#' + this.title
+								}
+							},
+							this.$slots.default
+						)
+					])
+		}
+	});
+	
+	Vue.component("ele", {
+		render: function(createElement) {
+			return createElement(
+						'div',
+						{
+							// 动态绑定class，通:class
+							class: {
+								'show': this.show
+							},
+							// 普通html特性
+							attrs: {
+								id: 'element'
+							},
+							// 给div绑定click事件
+							on: {
+								click: this.handleClick
+							}
+						},
+						'文本内容'
+			);
+		},
+		data: function() {
+			return {
+				show: true
+			}
+		},
+		methods: {
+			handleClick: function() {
+				console.log('clicked!');
+			}
+		}
+	});
+	
+	var Child = {
+			render: function(createElement) {
+				return createElement('p', 'text');
+			}
+	};
+	
+	Vue.component("ele2", {
+		render: function(createElement) {
+			return createElement(
+					'div',
+					Array.apply(null, {
+						length: 5
+					}).map(function() {
+						return createElement(Child);
+					})
+			);
+		}
+	});
+	
+	// 全局注册组件
+	Vue.component("Child", {
+		render: function(createElement) {
+			return createElement('p', 'text2');
+		}
+	});
+	
+	Vue.component("ele3", {
+		render: function(createElement) {
+			// 克隆slot节点的方法
+			function cloneVNode(vnode) {
+				// 递归遍历所有子节点，并克隆
+				const clonedChildren = vnode.children && vnode.children.map(function(vnode) {
+					return cloneVNode(vnode);
+				});
+				const cloned = createElement(
+						vnode.tag, 
+						vnode.data, 
+						clonedChildren
+				);
+				cloned.text = vnode.text;
+				cloned.isComment = vnode.isComment;
+				cloned.componentOptions = vnode.componentOptions;
+				cloned.elm = vnode.elm;
+				cloned.context = vnode.context;
+				cloned.ns = vnode.ns;
+				cloned.isStatic = vnode.isStatic;
+				cloned.key = vnode.key;
+				
+				return cloned;
+			}
+			const vNodes = this.$slots.default;
+			const clonedVNodes = vNodes.map(function(vnode) {
+				return cloneVNode(vnode);
+			});
+			
+			return createElement(
+					'div', [
+					 vNodes, 
+					 clonedVNodes
+			]);
+		}
+	});
+	
+	Vue.component("ele4", {
+		render: function(createElement) {
+			if(this.show) {
+				return createElement('p','show的值为true');
+			} else {
+				return createElement('p','show的值为false');
+			}
+		},
+		props: {
+			show: {
+				type: Boolean,
+				default: false
+			}
+		}
+	});
+	
+	Vue.component("ele5", {
+		render: function(createElement) {
+			if(this.list.length) {
+				return createElement('ul', this.list.map(function(item) {
+					return createElement('li', item);
+				}));
+			} else {
+				return createElement('p', '列表为空');
+			}
+		},
+		props: {
+			list: {
+				type: Array,
+				default: function() {
+					return [];
+				}
+			}
+		}
+	});
+	
+	Vue.component("ele6", {
+		render: function(createElement) {
+			var _this = this;
+			return createElement('div', [
+				createElement('input', {
+					domProps: {
+						value: this.value
+					},
+					on: {
+						input: function(event) {
+							_this.value = event.target.value;
+						}
+					}
+				}),
+				createElement('p', 'value：' + this.value)
+			])
+		},
+		data: function() {
+			return {
+				value: ''
+			}
+		}
+	});
+	
+	Vue.component("ele7", {
+		render: function(createElement) {
+			var _this = this;
+			// 渲染聊天内容列表
+			if(this.list.length) {
+				var listNode = createElement('ul', this.list.map(function(item) {
+					return createElement('li', item);
+				}));
+			} else {
+				var listNode = createElement('p', '暂无聊天内容');
+			}
+			return createElement('div', [
+				listNode,
+				createElement('input', {
+					attrs: {
+						placeholder: '输入内容，按回车键发送'
+					},
+					style: {
+						width: '200px'
+					},
+					on: {
+						keyup: function(event) {
+							// 如果不是回车键，不发送数据
+							if(event.keyCode !== 13) return;
+							// 添加输入的内容到聊天列表
+							_this.list.push(event.target.value);
+							// 发送后，清空输入框
+							event.target.value = '';
+						}
+					}
+				})
+			])
+		},
+		data: function() {
+			return {
+				value: '',
+				list: []
+			}
+		}
+	});
+	
+	Vue.component("ele8", {
+		render: function(createElement) {
+			if(this.$slots.default === undefined) {
+				return createElement('div', '没有使用slot时显示的文本');
+			} else {
+				return createElement('div', this.$slots.default);
+			}
+		}
+	});
+	
+	// 图片组件选项
+	var ImgItem = {
+			props: ['data'],
+			render: function(createElement) {
+				return createElement('div', [
+					createElement('p', '图片组件'),
+					createElement('img', {
+						style: {
+							width: '90px',
+							height: '90px'
+						},
+						attrs: {
+							src: this.data.url
+						}
+					})
+				]);
+			}
+	}
+	// 视频组件选项
+	var VideoItem = {
+			props: ['data'],
+			render: function(createElement) {
+				return createElement('div', [
+					createElement('p', '视频组件'),
+					createElement('video', {
+						style: {
+							width: '40%',
+							height: '350px'
+						},
+						attrs: {
+							src: this.data.url,
+							controls: 'controls',
+							autopaly: 'autopaly'
+						}
+					})
+				]);
+			}
+	}
+	// 纯文本组件选项
+	var TextItem = {
+			props: ['data'],
+			render: function(createElement) {
+				return createElement('div', [
+					createElement('p', '纯文本组件'),
+					createElement('p', this.data.text)
+				]);
+			}
+	}
+	
+	Vue.component('smart-item', {
+		// 函数化组件
+		functional: true,
+		render: function(createElement, context) {
+			// 根据传入的数据，智能判断显示哪种组件
+			function getComponent() {
+				var data =context.props.data;
+				// 判断props：data的type属于哪种类型组件
+				if(data.type === 'img') return ImgItem;
+				if(data.type === 'video') return VideoItem;
+				return TextItem;
+			}
+			return createElement(
+				getComponent(),	
+				{
+					props: {
+						// 把smart-item的prop:data传给上面智能选择组件
+						data: context.props.data
+					}
+				},
+				context.children
+			)
+		},
+		props: {
+			data: {
+				type: Object,
+				required: true
+			}
+		}
+	});
+	
+var app = new Vue({
+	el: '#app',
+	data: {
+		show: false,
+		list: [],
+		data: {}
+	},
+	methods: {
+		handleClick: function() {
+			if(this.list.length > 0) {
+				this.list = [];
+			} else {
+				this.list = [
+					'《Vue.js实战》',
+					'《JavaScript高级程序设计》',
+					'《JavaScript语言精粹》'
+				];
+			}
+		},
+		// 切换不同类型组件的数据
+		change: function(type) {
+			if(type === 'img') {
+				this.data = {
+					type: 'img',
+					url: 'https://cn.vuejs.org/images/logo.png'
+				}
+			} else if(type === 'video') {
+				this.data = {
+					type: 'video',
+					url: 'https://learning.dcloud.io/video/chapter_00.mp4'
+				}
+			} else if(type === 'text') {
+				this.data = {
+					type: 'text',
+					url: '这是一段纯文本'
+				}
+			}
+		}
+	},
+	created: function() {
+		// 初始化时，默认设置图片组件的数据
+		this.change('img');
+	}
+});
+</script>
+</body>
+</html>
