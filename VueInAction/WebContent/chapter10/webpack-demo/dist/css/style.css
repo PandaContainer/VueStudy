@@ -1,0 +1,25 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 来自.vue文件<styel>标签样式：使用scoped属性，可以为生成HTML标签和css样式生成data-v-xxx属性，使样式只对当前组件有效 */
+div[data-v-7d73c7f4] {
+	color: #f60;
+	font-size: 24px;
+}
+
+/* 来自css文件样式 */
+#app {
+	font-size: 24px;
+	color: #f50;
+}
