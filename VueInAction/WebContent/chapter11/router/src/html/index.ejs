@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>webpack App</title>
+</head>
+<body>
+	<!-- Vue.js提供了插件机制，可以全局添加一些功能，注册插件需要一个公开的方法install，它的第一个参数是Vue构造器，
+		第二个参数是一个可选的选项对象。通过Vue.use()来使用插件。
+	 -->
+	 <!-- <script type="text/javascript">
+			MyPlugin.install = function(Vue, options) {
+				// 全局注册组件（指令等功能资源类似）
+				Vue.component('conmponent-name', {
+				// 组件内容
+				});
+				// 添加实例方法
+				Vue.prototype.$Notice = function() {
+					// 逻辑...
+				}
+				// 添加全局方法或属性
+				Vue.globalMethod = function() {
+					// 逻辑...
+				}
+				// 添加全局混合
+				Vue.mixin({
+					mounted: function() {
+						// 逻辑...
+					}
+				});
+			}
+			
+			Vue.use(MyPlugin);
+			// 或
+			Vue.use(MyPlugin, {
+				// 参数
+			});
+		</script> -->
+    <div id="app"></div>
+</body>
+</html>
