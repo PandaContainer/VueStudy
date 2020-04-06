@@ -1,6 +1,9 @@
-// 导入Vue框架
+/**
+ * vue-router前端路由插件
+ */
+// 导入vue框架
 import Vue from 'vue';
-// 导入Vue路由插件
+// 导入vue-router路由插件
 import VueRouter from 'vue-router';
 
 // 使用插件
@@ -15,16 +18,46 @@ Vue.use(VueRouter);
 const Routers = [
 	{
 		path: '/index',
+		meta: {
+			title: '首页'
+		},
 		component: (resolve) => require(['./views/index.vue'], resolve)
 	},
 	{
 		path: '/about',
+		meta: {
+			title: '关于'
+		},
 		component: (resolve) => require(['./views/about.vue'], resolve)
+	},
+	{
+		path: '/login',
+		meta: {
+			title: '登录'
+		},
+		component: (resolve) => require(['./views/login.vue'], resolve)
 	},
 	{
 		// path可以带参数
 		path: '/user/:id',
+		meta: {
+			title: '个人中心'
+		},
 		component: (resolve) => require(['./views/user.vue'], resolve)
+	},
+	{
+		path: '/vuex',
+		meta: {
+			title: 'vuex插件'
+		},
+		component: (resolve) => require(['./views/vuex.vue'], resolve)
+	},
+	{
+		path: '/vue-bus',
+		meta: {
+			title: 'vue-bus自定义插件'
+		},
+		component: (resolve) => require(['./views/vue-bus.vue'], resolve)
 	},
 	{
 		// 当访问路径不存在，重定向到首页
@@ -41,5 +74,30 @@ const RouterConfig = {
 	routes: Routers
 }
 const router = new VueRouter(RouterConfig);
+
+/* vue-router提供了导航钩子beforeEach和afterEach，它们会在路由即将改变前和改变后触发。
+     导航钩子有3个参数：to 即将要进入的目标的路由对象，from 当前导航即将要离开的路由对象，next 调用该方法后，才能进入下一个钩子，
+   next可以带参数，参数设置为false时可以取消导航，设置为具体路径可以导航到指定页面。路由列表的meta字段可以自定义一些信息 */
+router.beforeEach((to, from, next) => {
+	// 设置浏览器标签标题
+	document.title = to.meta.title;
+	// 登录校验
+	if(to.path.match(/\/user\/?.*/)) {
+		// 此处this访问不到vue实例，不能使用this.$store.getters.token
+		if(sessionStorage.getItem('token')) {
+			next();
+		} else {
+			sessionStorage.setItem('targetUrl', '/user');
+			next('/login');
+		}
+	} else {
+		next();
+	}
+});
+// 提升用户体验：一个页面较长，滚动到某个位置，再跳转到另一个页面，滚动条默认是在上一个页面停留的位置，通过afterEach钩子返回顶端
+// 类似的需求还有，从一个页面过渡到另一个页面时，可以出现一个全局的Loading动画，等到新页面加载完后再结束动画
+router.afterEach((to, from, next) => {
+	window.scrollTo(0, 0);
+});
 
 export default router;

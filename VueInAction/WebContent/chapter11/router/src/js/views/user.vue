@@ -1,8 +1,10 @@
 <template>
 	<div>
-		<h1>这是用户页内容</h1>
-		vue-router传入参数为：{{ $route.params.id }}
-		<router-link to="/index" tag="li" replace>使用&lt;router-link&gt;组件跳转回index</router-link>
+		<h1>这是个人中心内容</h1>
+		vue-router传入参数this.$route.params.id：{{ $route.params.id }}
+		<ul>
+		<router-link to="/index" tag="li" replace>点击此处返回首页</router-link>
+		</ul>
 	</div>
 </template>
 <script>
