@@ -3,6 +3,7 @@
 		<router-link to="/index">首页</router-link> |
 		<router-link to="/vuex">vuex插件</router-link> |
 		<router-link to="/vue-bus">vue-bus自定义插件</router-link> |
+		<router-link to="/vue-ajax">vue-ajax自定义插件</router-link> |
 		<template v-if="$store.getters.token">
 			<router-link :to="'/user/' + $store.getters.userInfo.id">个人中心</router-link> |
 		</template>

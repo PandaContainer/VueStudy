@@ -60,6 +60,13 @@ const Routers = [
 		component: (resolve) => require(['./views/vue-bus.vue'], resolve)
 	},
 	{
+		path: '/vue-ajax',
+		meta: {
+			title: 'vue-ajax自定义插件'
+		},
+		component: (resolve) => require(['./views/vue-ajax.vue'], resolve)
+	},
+	{
 		// 当访问路径不存在，重定向到首页
 		path: '*',
 		redirect: '/index'
